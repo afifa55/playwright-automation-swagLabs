@@ -1,0 +1,59 @@
+name: Playwright Tests
+
+# Disabled: automatic triggers removed. Runs only when started manually from the Actions tab.
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Create .env from secrets
+        run: |
+          cat > .env <<EOF
+          BASE_URL=${{ secrets.BASE_URL }}
+          STANDARD_USER=${{ secrets.STANDARD_USER }}
+          LOCKED_OUT_USER=${{ secrets.LOCKED_OUT_USER }}
+          PROBLEM_USER=${{ secrets.PROBLEM_USER }}
+          PERFORMANCE_GLITCH_USER=${{ secrets.PERFORMANCE_GLITCH_USER }}
+          ERROR_USER=${{ secrets.ERROR_USER }}
+          PASSWORD=${{ secrets.PASSWORD }}
+          INVALID_USER=${{ secrets.INVALID_USER }}
+          INVALID_PASSWORD=${{ secrets.INVALID_PASSWORD }}
+          FIRST_NAME=${{ secrets.FIRST_NAME }}
+          LAST_NAME=${{ secrets.LAST_NAME }}
+          POSTAL_CODE=${{ secrets.POSTAL_CODE }}
+          EOF
+
+      - name: Run Playwright tests
+        run: npm test
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: logs/
+          retention-days: 14
